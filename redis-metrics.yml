@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+ name: web
+spec:
+ serviceName: "redis"
+ replicas: 2
+ selector:
+   matchLabels:
+     app: redis
+ template:
+   metadata:
+     labels:
+       app: redis
+     annotations:
+       prometheus.io/path: "/metrics"
+       prometheus.io/scrape: "true"
+       prometheus.io/port: "9121"
+   spec:
+     containers:
+     - name: redis
+       image: redis:latest
+       ports:
+       - containerPort: 6379
+         name: redis-port
+       volumeMounts:
+       - name: data
+         mountPath: /data
+     - name: redis-exporter
+       image: oliver006/redis_exporter
+       ports:
+       - containerPort: 9121
+         name: exporter-port
+       volumeMounts:
+       - name: data
+         mountPath: /data
+ volumeClaimTemplates:
+ - metadata:
+     name: data
+   spec:
+     accessModes: [ "ReadWriteOnce" ]
+     resources:
+       requests:
+         storage: 1Gi
